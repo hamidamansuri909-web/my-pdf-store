@@ -3,8 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My PDFs</title> 
+
+    <title>My PDFs</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 700px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        input {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 8px 12px;
+            margin: 4px;
+            cursor: pointer;
+        }
+
+        li {
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .pdf-name {
+            display: block;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+    </style>
 </head>
+
 <body>
 
     <h1>My PDF Store</h1>
@@ -37,6 +76,10 @@
             showPDFs();
         };
 
+        request.onerror = function() {
+            alert("PDF storage open nahi ho paaya.");
+        };
+
         function savePDF() {
             const input = document.getElementById("pdfInput");
 
@@ -59,6 +102,10 @@
                 input.value = "";
                 showPDFs();
             };
+
+            transaction.onerror = function() {
+                alert("PDF save nahi ho paayi.");
+            };
         }
 
         function showPDFs() {
@@ -76,26 +123,49 @@
 
                     const li = document.createElement("li");
 
+                    const name = document.createElement("span");
+                    name.className = "pdf-name";
+                    name.textContent = pdf.name;
+
                     const openButton = document.createElement("button");
-                    openButton.textContent = "Open";
+                    openButton.textContent = "Open PDF";
 
                     openButton.onclick = function() {
                         const url = URL.createObjectURL(pdf.file);
-                        window.open(url, "_blank");
+
+                        // Mobile aur PC dono ke liye direct navigation
+                        window.location.href = url;
+                    };
+
+                    const downloadButton = document.createElement("button");
+                    downloadButton.textContent = "Download";
+
+                    downloadButton.onclick = function() {
+                        const url = URL.createObjectURL(pdf.file);
+
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = pdf.name;
+
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+
+                        setTimeout(function() {
+                            URL.revokeObjectURL(url);
+                        }, 1000);
                     };
 
                     const deleteButton = document.createElement("button");
-                    deleteButton.textContent = " Delete";
+                    deleteButton.textContent = "Delete";
 
                     deleteButton.onclick = function() {
                         deletePDF(pdf.id);
                     };
 
-                    li.appendChild(
-                        document.createTextNode(pdf.name + " ")
-                    );
-
+                    li.appendChild(name);
                     li.appendChild(openButton);
+                    li.appendChild(downloadButton);
                     li.appendChild(deleteButton);
 
                     list.appendChild(li);
