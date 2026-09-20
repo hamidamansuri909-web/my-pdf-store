@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My PDFs</title>
+</head>
+<body>
+
+    <h1>My PDF Store</h1>
+
+    <input type="file" id="pdfInput" accept="application/pdf">
+    <button onclick="savePDF()">Add PDF</button>
+
+    <h2>My PDFs</h2>
+
+    <ul id="pdfList"></ul>
+
+    <script>
+        let db;
+
+        const request = indexedDB.open("PDFStore", 1);
+
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+
+            if (!db.objectStoreNames.contains("pdfs")) {
+                db.createObjectStore("pdfs", {
+                    keyPath: "id",
+                    autoIncrement: true
+                });
+            }
+        };
+
+        request.onsuccess = function(event) {
+            db = event.target.result;
+            showPDFs();
+        };
+
+        function savePDF() {
+            const input = document.getElementById("pdfInput");
+
+            if (input.files.length === 0) {
+                alert("Pehle PDF select kar bhai.");
+                return;
+            }
+
+            const file = input.files[0];
+
+            const transaction = db.transaction(["pdfs"], "readwrite");
+            const store = transaction.objectStore("pdfs");
+
+            store.add({
+                name: file.name,
+                file: file
+            });
+
+            transaction.oncomplete = function() {
+                input.value = "";
+                showPDFs();
+            };
+        }
+
+        function showPDFs() {
+            const list = document.getElementById("pdfList");
+            list.innerHTML = "";
+
+            const transaction = db.transaction(["pdfs"], "readonly");
+            const store = transaction.objectStore("pdfs");
+
+            store.openCursor().onsuccess = function(event) {
+                const cursor = event.target.result;
+
+                if (cursor) {
+                    const pdf = cursor.value;
+
+                    const li = document.createElement("li");
+
+                    const openButton = document.createElement("button");
+                    openButton.textContent = "Open";
+
+                    openButton.onclick = function() {
+                        const url = URL.createObjectURL(pdf.file);
+                        window.open(url, "_blank");
+                    };
+
+                    const deleteButton = document.createElement("button");
+                    deleteButton.textContent = " Delete";
+
+                    deleteButton.onclick = function() {
+                        deletePDF(pdf.id);
+                    };
+
+                    li.appendChild(
+                        document.createTextNode(pdf.name + " ")
+                    );
+
+                    li.appendChild(openButton);
+                    li.appendChild(deleteButton);
+
+                    list.appendChild(li);
+
+                    cursor.continue();
+                }
+            };
+        }
+
+        function deletePDF(id) {
+            const transaction = db.transaction(["pdfs"], "readwrite");
+            const store = transaction.objectStore("pdfs");
+
+            store.delete(id);
+
+            transaction.oncomplete = function() {
+                showPDFs();
+            };
+        }
+    </script>
+
+</body>
+</html>
